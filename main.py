@@ -30,4 +30,7 @@ async def stream(websocket: WebSocket):
     except Exception as e:
         print(e)
 
+    try:
     await websocket.close()
+except:
+    pass
