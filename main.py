@@ -1,7 +1,13 @@
 from fastapi import FastAPI, WebSocket
 import json
+import os
+from groq import Groq
 
 app = FastAPI()
+
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
+)
 
 @app.get("/")
 async def root():
@@ -19,22 +25,9 @@ async def stream(websocket: WebSocket):
             data = await websocket.receive_text()
             event = json.loads(data)
 
-            print("Received event:", event.get("event"))
-
-            if event.get("event") == "connected":
-                print("Exotel Connected")
-
-            elif event.get("event") == "start":
-                print("Call Started")
-
-            elif event.get("event") == "media":
-                print("Audio Packet Received")
-
-            elif event.get("event") == "stop":
-                print("Call Ended")
-                break
+            print("Received:", event)
 
     except Exception as e:
-        print("Error:", e)
+        print(e)
 
     await websocket.close()
