@@ -1,13 +1,8 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import json
-import os
-from groq import Groq
 
 app = FastAPI()
 
-client = Groq(
-    api_key=os.getenv("GROQ_API_KEY")
-)
 
 @app.get("/")
 async def root():
@@ -16,21 +11,44 @@ async def root():
         "service": "Exotel AgentStream"
     }
 
+
 @app.websocket("/stream")
 async def stream(websocket: WebSocket):
     await websocket.accept()
 
+    print("Exotel connected")
+
     try:
         while True:
             data = await websocket.receive_text()
-            event = json.loads(data)
 
-            print("Received:", event)
+            print("Received:")
+            print(data)
+
+            try:
+                payload = json.loads(data)
+
+                if payload.get("event") == "start":
+                    print("Call started")
+
+                elif payload.get("event") == "media":
+                    print("Audio packet received")
+
+                elif payload.get("event") == "stop":
+                    print("Call ended")
+                    break
+
+            except Exception as e:
+                print("JSON parse error:", e)
+
+    except WebSocketDisconnect:
+        print("Exotel disconnected")
 
     except Exception as e:
-        print(e)
+        print("Error:", e)
 
-    try:
-    await websocket.close()
-except:
-    pass
+    finally:
+        try:
+            await websocket.close()
+        except:
+            pass
