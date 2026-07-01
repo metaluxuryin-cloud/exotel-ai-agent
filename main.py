@@ -1,202 +1,77 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from groq import Groq
-import os
 import json
+import os
 import base64
+import wave
 
 app = FastAPI()
 
-# -------------------------------
-# GROQ INITIALIZATION
-# -------------------------------
-
-groq_api_key = os.getenv("GROQ_API_KEY")
-
-groq_client = None
-if groq_api_key:
-    groq_client = Groq(api_key=groq_api_key)
-
-# -------------------------------
-# ROOT ENDPOINT
-# -------------------------------
 
 @app.get("/")
 async def root():
     return {
-        "status": "running",
-        "groq": "connected" if os.getenv("GROQ_API_KEY") else "missing",
-        "deepgram": "connected" if os.getenv("DEEPGRAM_API_KEY") else "missing"
+        "status": "running"
     }
 
-# -------------------------------
-# TEST GROQ
-# -------------------------------
-
-@app.get("/test-groq")
-async def test_groq():
-
-    if not groq_client:
-        return {
-            "status": "failed",
-            "error": "GROQ_API_KEY missing"
-        }
-
-    try:
-        response = groq_client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[
-                {
-                    "role": "user",
-                    "content": "Reply with only OK"
-                }
-            ]
-        )
-
-        return {
-            "status": "success",
-            "reply": response.choices[0].message.content
-        }
-
-    except Exception as e:
-        return {
-            "status": "failed",
-            "error": str(e)
-        }
-
-# -------------------------------
-# EXOTEL WEBSOCKET
-# -------------------------------
 
 @app.websocket("/stream")
 async def stream(websocket: WebSocket):
-
     await websocket.accept()
 
     print("========== EXOTEL CONNECTED ==========")
 
-    stream_sid = None
-
     try:
-
         while True:
-
             data = await websocket.receive_text()
 
-            print("RAW DATA RECEIVED")
+            payload = json.loads(data)
 
-            try:
+            event = payload.get("event")
 
-                payload = json.loads(data)
+            print("EVENT:", event)
 
-                event = payload.get("event", "unknown")
+            if event == "connected":
+                print("STREAM CONNECTED")
 
-                print(f"EVENT: {event}")
+            elif event == "start":
+                print("CALL STARTED")
 
-                # -----------------------
-                # CONNECTED EVENT
-                # -----------------------
+                with wave.open("hello.wav", "rb") as wav_file:
+                    audio_data = wav_file.readframes(
+                        wav_file.getnframes()
+                    )
 
-                if event == "connected":
-                    print("STREAM CONNECTED")
+                chunk_size = 320
 
-                # -----------------------
-                # START EVENT
-                # -----------------------
+                for i in range(0, len(audio_data), chunk_size):
+                    chunk = audio_data[i:i + chunk_size]
 
-                elif event == "start":
-
-                    print("CALL STARTED")
-
-                    stream_sid = payload.get("stream_sid")
-
-                    print("STREAM SID:", stream_sid)
-
-                    try:
-
-                        with open("hello.raw", "rb") as audio_file:
-                            audio_bytes = audio_file.read()
-
-                        response = {
-                            "event": "media",
-                            "stream_sid": stream_sid,
-                            "media": {
-                                "payload": base64.b64encode(
-                                    audio_bytes
-                                ).decode("ascii")
-                            }
+                    message = {
+                        "event": "media",
+                        "media": {
+                            "payload": base64.b64encode(
+                                chunk
+                            ).decode("utf-8")
                         }
+                    }
 
-                        await websocket.send_text(
-                            json.dumps(response)
-                        )
+                    await websocket.send_text(
+                        json.dumps(message)
+                    )
 
-                        print(
-                            "HELLO AUDIO SENT TO EXOTEL SUCCESSFULLY"
-                        )
+                print("HELLO AUDIO SENT")
 
-                    except Exception as audio_error:
-                        print(
-                            f"AUDIO SEND ERROR: {str(audio_error)}"
-                        )
+            elif event == "media":
+                pass
 
-                # -----------------------
-                # MEDIA EVENT
-                # -----------------------
-
-                elif event == "media":
-
-                    media = payload.get("media", {})
-
-                    audio_payload = media.get("payload")
-
-                    print("MEDIA OBJECT RECEIVED")
-
-                    if audio_payload:
-                        print(
-                            f"AUDIO PAYLOAD LENGTH: {len(audio_payload)}"
-                        )
-                    else:
-                        print("EMPTY AUDIO PAYLOAD")
-
-                # -----------------------
-                # STOP EVENT
-                # -----------------------
-
-                elif event == "stop":
-
-                    print("STOP EVENT RECEIVED")
-                    print("EXOTEL ENDED THE CALL")
-
-                    break
-
-                # -----------------------
-                # UNKNOWN EVENT
-                # -----------------------
-
-                else:
-                    print(f"UNKNOWN EVENT: {event}")
-
-            except json.JSONDecodeError:
-                print("INVALID JSON RECEIVED")
-
-            except Exception as inner_error:
-                print(
-                    f"EVENT PROCESSING ERROR: {str(inner_error)}"
-                )
+            elif event == "stop":
+                print("CALL ENDED")
 
     except WebSocketDisconnect:
         print("EXOTEL DISCONNECTED")
 
-    except Exception as outer_error:
-        print(
-            f"WEBSOCKET SERVER ERROR: {str(outer_error)}"
-        )
+    except Exception as e:
+        print("ERROR:", str(e))
 
     finally:
-
-        print("WEBSOCKET SESSION FINISHED")
-
-        try:
-            await websocket.close()
-        except:
-            pass
+        print("SESSION CLOSED")
