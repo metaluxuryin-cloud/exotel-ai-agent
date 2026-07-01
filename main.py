@@ -32,7 +32,8 @@ async def stream(websocket: WebSocket):
                     print("Call started")
 
                 elif payload.get("event") == "media":
-                    print("Audio packet received")
+    print("========== MEDIA EVENT ==========")
+    print(json.dumps(payload, indent=2))
 
                 elif payload.get("event") == "stop":
                     print("Call ended")
