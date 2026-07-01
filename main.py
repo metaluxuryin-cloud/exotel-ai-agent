@@ -32,7 +32,9 @@ async def stream(websocket: WebSocket):
                     print("Call started")
 
                 elif payload.get("event") == "media":
-                    print("Audio packet received")
+    media = payload.get("media", {})
+    print("MEDIA INFO:", media.keys())
+    print(media)
 
                 elif payload.get("event") == "stop":
                     print("Call ended")
