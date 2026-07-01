@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from groq import Groq
 import os
+import json
 
 app = FastAPI()
 
@@ -31,3 +32,47 @@ async def root():
             "groq_status": "failed",
             "error": str(e)
         }
+
+
+@app.websocket("/stream")
+async def stream(websocket: WebSocket):
+    await websocket.accept()
+
+    print("Exotel connected")
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+
+            payload = json.loads(data)
+
+            event = payload.get("event")
+
+            print("EVENT:", event)
+
+            if event == "connected":
+                print("WEBSOCKET CONNECTED")
+
+            elif event == "start":
+                print("CALL STARTED")
+
+            elif event == "media":
+                media = payload.get("media", {})
+                print("MEDIA OBJECT:")
+                print(media)
+
+            elif event == "stop":
+                print("CALL ENDED")
+                break
+
+    except WebSocketDisconnect:
+        print("Exotel disconnected")
+
+    except Exception as e:
+        print("ERROR:", str(e))
+
+    finally:
+        try:
+            await websocket.close()
+        except:
+            pass
