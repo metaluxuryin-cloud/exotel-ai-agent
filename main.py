@@ -1,59 +1,33 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-import json
-import base64
+from fastapi import FastAPI
+from groq import Groq
+import os
 
 app = FastAPI()
 
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
+)
+
 @app.get("/")
 async def root():
-    return {
-        "status": "AI Agent Running",
-        "service": "Exotel AgentStream"
-    }
-
-
-@app.websocket("/stream")
-async def stream(websocket: WebSocket):
-    await websocket.accept()
-
-    print("Exotel connected")
-
     try:
-        while True:
-            data = await websocket.receive_text()
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {
+                    "role": "user",
+                    "content": "Say hello in one sentence"
+                }
+            ]
+        )
 
-            payload = json.loads(data)
-
-            event = payload.get("event")
-
-            print(f"EVENT: {event}")
-
-            if event == "start":
-                print("CALL STARTED")
-
-            elif event == "media":
-                media = payload.get("media", {})
-
-                audio_payload = media.get("payload")
-
-                if audio_payload:
-                    audio_bytes = base64.b64decode(audio_payload)
-
-                    print("Audio bytes length:", len(audio_bytes))
-                    print("First 20 bytes:", audio_bytes[:20])
-
-            elif event == "stop":
-                print("CALL ENDED")
-                break
-
-    except WebSocketDisconnect:
-        print("Exotel disconnected")
+        return {
+            "groq_status": "connected",
+            "reply": response.choices[0].message.content
+        }
 
     except Exception as e:
-        print("ERROR:", str(e))
-
-    finally:
-        try:
-            await websocket.close()
-        except:
-            pass
+        return {
+            "groq_status": "failed",
+            "error": str(e)
+        }
