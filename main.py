@@ -2,16 +2,23 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from groq import Groq
 import os
 import json
+import base64
 
 app = FastAPI()
 
-# Initialize Groq client only if API key exists
+# -------------------------------
+# GROQ INITIALIZATION
+# -------------------------------
+
 groq_api_key = os.getenv("GROQ_API_KEY")
 
 groq_client = None
 if groq_api_key:
     groq_client = Groq(api_key=groq_api_key)
 
+# -------------------------------
+# ROOT ENDPOINT
+# -------------------------------
 
 @app.get("/")
 async def root():
@@ -21,9 +28,13 @@ async def root():
         "deepgram": "connected" if os.getenv("DEEPGRAM_API_KEY") else "missing"
     }
 
+# -------------------------------
+# TEST GROQ
+# -------------------------------
 
 @app.get("/test-groq")
 async def test_groq():
+
     if not groq_client:
         return {
             "status": "failed",
@@ -52,33 +63,88 @@ async def test_groq():
             "error": str(e)
         }
 
+# -------------------------------
+# EXOTEL WEBSOCKET
+# -------------------------------
 
 @app.websocket("/stream")
 async def stream(websocket: WebSocket):
+
     await websocket.accept()
 
     print("========== EXOTEL CONNECTED ==========")
 
+    stream_sid = None
+
     try:
+
         while True:
+
             data = await websocket.receive_text()
 
             print("RAW DATA RECEIVED")
 
             try:
+
                 payload = json.loads(data)
 
                 event = payload.get("event", "unknown")
 
                 print(f"EVENT: {event}")
 
+                # -----------------------
+                # CONNECTED EVENT
+                # -----------------------
+
                 if event == "connected":
                     print("STREAM CONNECTED")
 
+                # -----------------------
+                # START EVENT
+                # -----------------------
+
                 elif event == "start":
+
                     print("CALL STARTED")
 
+                    stream_sid = payload.get("stream_sid")
+
+                    print("STREAM SID:", stream_sid)
+
+                    try:
+
+                        with open("hello.raw", "rb") as audio_file:
+                            audio_bytes = audio_file.read()
+
+                        response = {
+                            "event": "media",
+                            "stream_sid": stream_sid,
+                            "media": {
+                                "payload": base64.b64encode(
+                                    audio_bytes
+                                ).decode("ascii")
+                            }
+                        }
+
+                        await websocket.send_text(
+                            json.dumps(response)
+                        )
+
+                        print(
+                            "HELLO AUDIO SENT TO EXOTEL SUCCESSFULLY"
+                        )
+
+                    except Exception as audio_error:
+                        print(
+                            f"AUDIO SEND ERROR: {str(audio_error)}"
+                        )
+
+                # -----------------------
+                # MEDIA EVENT
+                # -----------------------
+
                 elif event == "media":
+
                     media = payload.get("media", {})
 
                     audio_payload = media.get("payload")
@@ -92,9 +158,20 @@ async def stream(websocket: WebSocket):
                     else:
                         print("EMPTY AUDIO PAYLOAD")
 
+                # -----------------------
+                # STOP EVENT
+                # -----------------------
+
                 elif event == "stop":
+
                     print("STOP EVENT RECEIVED")
                     print("EXOTEL ENDED THE CALL")
+
+                    break
+
+                # -----------------------
+                # UNKNOWN EVENT
+                # -----------------------
 
                 else:
                     print(f"UNKNOWN EVENT: {event}")
@@ -115,4 +192,11 @@ async def stream(websocket: WebSocket):
             f"WEBSOCKET SERVER ERROR: {str(outer_error)}"
         )
 
-    print("WEBSOCKET SESSION FINISHED")
+    finally:
+
+        print("WEBSOCKET SESSION FINISHED")
+
+        try:
+            await websocket.close()
+        except:
+            pass
