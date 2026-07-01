@@ -26,20 +26,20 @@ async def stream(websocket: WebSocket):
             print(data)
 
             try:
-    payload = json.loads(data)
+                payload = json.loads(data)
 
-    if payload.get("event") == "start":
-        print("Call started")
+                if payload.get("event") == "start":
+                    print("Call started")
 
-    elif payload.get("event") == "media":
-        print("Audio packet received")
+                elif payload.get("event") == "media":
+                    print("Audio packet received")
 
-    elif payload.get("event") == "stop":
-        print("Call ended")
-        break
+                elif payload.get("event") == "stop":
+                    print("Call ended")
+                    break
 
-except Exception as e:
-    print("JSON parse error:", e)
+            except Exception as e:
+                print("JSON parse error:", e)
 
     except WebSocketDisconnect:
         print("Exotel disconnected")
