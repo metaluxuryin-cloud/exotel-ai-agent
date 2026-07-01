@@ -1,18 +1,24 @@
-from fastapi ,deepgram import FastAPI, WebSocket, WebSocketDisconnect ,DeepgramClient
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from deepgram import DeepgramClient
+import os
 import json
 import base64
 import wave
 
 app = FastAPI()
+
+# Deepgram client
 deepgram = DeepgramClient(
     os.getenv("DEEPGRAM_API_KEY")
 )
+
 
 @app.get("/")
 async def root():
     return {
         "status": "running",
-        "service": "Exotel Voicebot Test"
+        "service": "Exotel Voicebot Test",
+        "deepgram": "connected"
     }
 
 
@@ -33,16 +39,16 @@ async def stream(websocket: WebSocket):
 
             print("EVENT:", event)
 
-            # ----------------------------------
+            # -----------------------------
             # CONNECTED EVENT
-            # ----------------------------------
+            # -----------------------------
 
             if event == "connected":
                 print("STREAM CONNECTED")
 
-            # ----------------------------------
+            # -----------------------------
             # START EVENT
-            # ----------------------------------
+            # -----------------------------
 
             elif event == "start":
 
@@ -82,9 +88,9 @@ async def stream(websocket: WebSocket):
                         str(audio_error)
                     )
 
-            # ----------------------------------
+            # -----------------------------
             # CUSTOMER AUDIO
-            # ----------------------------------
+            # -----------------------------
 
             elif event == "media":
 
@@ -108,9 +114,9 @@ async def stream(websocket: WebSocket):
                         len(audio_payload)
                     )
 
-            # ----------------------------------
+            # -----------------------------
             # STOP EVENT
-            # ----------------------------------
+            # -----------------------------
 
             elif event == "stop":
 
