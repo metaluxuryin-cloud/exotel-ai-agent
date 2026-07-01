@@ -22,37 +22,32 @@ async def stream(websocket: WebSocket):
         while True:
             data = await websocket.receive_text()
 
-            print("Received:")
-            print(data)
-
             try:
                 payload = json.loads(data)
 
-                # Call started
-                if payload.get("event") == "start":
-                    print("Call started")
+                event = payload.get("event")
+                print("EVENT:", event)
 
-                # Audio packet
-                elif payload.get("event") == "media":
+                if event == "media":
                     media = payload.get("media", {})
-
-                    print("Audio packet received")
-                    print("MEDIA INFO:")
+                    print("MEDIA OBJECT:")
                     print(media)
 
-                # Call ended
-                elif payload.get("event") == "stop":
-                    print("Call ended")
+                elif event == "start":
+                    print("CALL STARTED")
+
+                elif event == "stop":
+                    print("CALL ENDED")
                     break
 
             except Exception as e:
-                print("JSON parse error:", e)
+                print("JSON ERROR:", e)
 
     except WebSocketDisconnect:
         print("Exotel disconnected")
 
     except Exception as e:
-        print("Error:", e)
+        print("SERVER ERROR:", e)
 
     finally:
         try:
