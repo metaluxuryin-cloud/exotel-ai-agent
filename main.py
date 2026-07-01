@@ -1,10 +1,12 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi ,deepgram import FastAPI, WebSocket, WebSocketDisconnect ,DeepgramClient
 import json
 import base64
 import wave
 
 app = FastAPI()
-
+deepgram = DeepgramClient(
+    os.getenv("DEEPGRAM_API_KEY")
+)
 
 @app.get("/")
 async def root():
