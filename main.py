@@ -28,14 +28,19 @@ async def stream(websocket: WebSocket):
             try:
                 payload = json.loads(data)
 
+                # Call started
                 if payload.get("event") == "start":
                     print("Call started")
 
+                # Audio packet
                 elif payload.get("event") == "media":
-    media = payload.get("media", {})
-    print("MEDIA INFO:", media.keys())
-    print(media)
+                    media = payload.get("media", {})
 
+                    print("Audio packet received")
+                    print("MEDIA INFO:")
+                    print(media)
+
+                # Call ended
                 elif payload.get("event") == "stop":
                     print("Call ended")
                     break
