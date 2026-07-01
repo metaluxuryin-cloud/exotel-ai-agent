@@ -67,10 +67,13 @@ async def stream(websocket: WebSocket):
                 elif event == "start":
                     print("CALL STARTED")
 
-                elif event == "media":
-                    media = payload.get("media", {})
-                    print("MEDIA OBJECT:")
-                    print(media)
+               elif event == "media":
+    media = payload.get("media", {})
+
+    payload_audio = media.get("payload")
+
+    print("AUDIO RECEIVED")
+    print("Payload length:", len(payload_audio))
 
                 elif event == "stop":
                     print("CALL ENDED")
