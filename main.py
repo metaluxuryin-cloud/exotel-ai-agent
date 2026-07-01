@@ -1,8 +1,8 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import json
+import base64
 
 app = FastAPI()
-
 
 @app.get("/")
 async def root():
@@ -22,32 +22,35 @@ async def stream(websocket: WebSocket):
         while True:
             data = await websocket.receive_text()
 
-            try:
-                payload = json.loads(data)
+            payload = json.loads(data)
 
-                event = payload.get("event")
-                print("EVENT:", event)
+            event = payload.get("event")
 
-                if event == "media":
-                    media = payload.get("media", {})
-                    print("MEDIA OBJECT:")
-                    print(media)
+            print(f"EVENT: {event}")
 
-                elif event == "start":
-                    print("CALL STARTED")
+            if event == "start":
+                print("CALL STARTED")
 
-                elif event == "stop":
-                    print("CALL ENDED")
-                    break
+            elif event == "media":
+                media = payload.get("media", {})
 
-            except Exception as e:
-                print("JSON ERROR:", e)
+                audio_payload = media.get("payload")
+
+                if audio_payload:
+                    audio_bytes = base64.b64decode(audio_payload)
+
+                    print("Audio bytes length:", len(audio_bytes))
+                    print("First 20 bytes:", audio_bytes[:20])
+
+            elif event == "stop":
+                print("CALL ENDED")
+                break
 
     except WebSocketDisconnect:
         print("Exotel disconnected")
 
     except Exception as e:
-        print("SERVER ERROR:", e)
+        print("ERROR:", str(e))
 
     finally:
         try:
