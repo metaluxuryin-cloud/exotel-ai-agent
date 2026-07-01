@@ -1,6 +1,5 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import json
-import os
 import base64
 import wave
 
@@ -10,7 +9,8 @@ app = FastAPI()
 @app.get("/")
 async def root():
     return {
-        "status": "running"
+        "status": "running",
+        "service": "Exotel Voicebot Test"
     }
 
 
@@ -22,6 +22,7 @@ async def stream(websocket: WebSocket):
 
     try:
         while True:
+
             data = await websocket.receive_text()
 
             payload = json.loads(data)
@@ -30,48 +31,115 @@ async def stream(websocket: WebSocket):
 
             print("EVENT:", event)
 
+            # ----------------------------------
+            # CONNECTED EVENT
+            # ----------------------------------
+
             if event == "connected":
                 print("STREAM CONNECTED")
 
+            # ----------------------------------
+            # START EVENT
+            # ----------------------------------
+
             elif event == "start":
+
                 print("CALL STARTED")
 
-                with wave.open("hello.wav", "rb") as wav_file:
-                    audio_data = wav_file.readframes(
-                        wav_file.getnframes()
-                    )
+                try:
 
-                chunk_size = 320
+                    with wave.open("hello.wav", "rb") as wav_file:
+                        audio_data = wav_file.readframes(
+                            wav_file.getnframes()
+                        )
 
-                for i in range(0, len(audio_data), chunk_size):
-                    chunk = audio_data[i:i + chunk_size]
+                    chunk_size = 320
 
-                    message = {
-                        "event": "media",
-                        "media": {
-                            "payload": base64.b64encode(
-                                chunk
-                            ).decode("utf-8")
+                    for i in range(0, len(audio_data), chunk_size):
+
+                        chunk = audio_data[i:i + chunk_size]
+
+                        message = {
+                            "event": "media",
+                            "media": {
+                                "payload": base64.b64encode(
+                                    chunk
+                                ).decode("utf-8")
+                            }
                         }
-                    }
 
-                    await websocket.send_text(
-                        json.dumps(message)
+                        await websocket.send_text(
+                            json.dumps(message)
+                        )
+
+                    print("HELLO AUDIO SENT")
+
+                except Exception as audio_error:
+                    print(
+                        "AUDIO ERROR:",
+                        str(audio_error)
                     )
 
-                print("HELLO AUDIO SENT")
+            # ----------------------------------
+            # CUSTOMER AUDIO
+            # ----------------------------------
 
             elif event == "media":
-                pass
+
+                media = payload.get(
+                    "media",
+                    {}
+                )
+
+                audio_payload = media.get(
+                    "payload"
+                )
+
+                if audio_payload:
+
+                    print(
+                        "CUSTOMER SPEAKING"
+                    )
+
+                    print(
+                        "PAYLOAD SIZE:",
+                        len(audio_payload)
+                    )
+
+            # ----------------------------------
+            # STOP EVENT
+            # ----------------------------------
 
             elif event == "stop":
-                print("CALL ENDED")
+
+                print(
+                    "CALL ENDED"
+                )
+
+                break
+
+            else:
+
+                print(
+                    "UNKNOWN EVENT:",
+                    event
+                )
 
     except WebSocketDisconnect:
-        print("EXOTEL DISCONNECTED")
+
+        print(
+            "EXOTEL DISCONNECTED"
+        )
 
     except Exception as e:
-        print("ERROR:", str(e))
+
+        print(
+            "SERVER ERROR:",
+            str(e)
+        )
 
     finally:
-        print("SESSION CLOSED")
+
+        print(
+            "SESSION CLOSED"
+        )
