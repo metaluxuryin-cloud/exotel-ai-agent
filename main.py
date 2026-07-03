@@ -46,10 +46,10 @@ def test_call():
         "agent_phone_number_id": PHONE_ID,
         "recipients": [
             {
-                "phone_number": "+917990403189",
+                "phone_number": "+918767645092",
                 "conversation_initiation_client_data": {
                     "dynamic_variables": {
-                        "customer_name": "RIYAZ lOHIYA ",
+                        "customer_name": "HUSSAIN MEMON ",
                         "product_name": "CROCS LITERIDE 360 BLACK GREY COLOUR",
                         "size": "UK 9",
                         "quantity": "1",
