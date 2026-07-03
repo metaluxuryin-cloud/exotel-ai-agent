@@ -46,15 +46,15 @@ def test_call():
         "agent_phone_number_id": PHONE_ID,
         "recipients": [
             {
-                "phone_number": "+917990403189",
+                "phone_number": "+919429975493",
                 "conversation_initiation_client_data": {
                     "dynamic_variables": {
-                        "customer_name": "Jagrut",
-                        "product_name": "Test Product",
+                        "customer_name": "RIYAZ lOHIYA ",
+                        "product_name": "CROCS LITERIDE 360 BLACK GREY COLOUR",
                         "size": "UK 9",
                         "quantity": "1",
-                        "amount": "999",
-                        "address": "Surat Gujarat"
+                        "amount": "2199",
+                        "address": "E-702 RAIHAN HIGHTS OPP RYAN INTERNATIONAL SCHOOL ADAJAN Surat Gujarat PIN 395009 "
                     }
                 }
             }
