@@ -1,153 +1,57 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from deepgram import DeepgramClient
-import os
-import json
-import base64
-import wave
+from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import List
 
 app = FastAPI()
 
-# Deepgram client
-deepgram = DeepgramClient(
-    os.getenv("DEEPGRAM_API_KEY")
-)
+
+class Product(BaseModel):
+    name: str
+    quantity: int
+    price: float
+
+
+class OrderData(BaseModel):
+    order_id: int
+    customer_name: str
+    phone: str
+    amount: float
+    address: str
+    city: str
+    state: str
+    pincode: str
+    products: List[Product]
 
 
 @app.get("/")
-async def root():
+def home():
     return {
         "status": "running",
-        "service": "Exotel Voicebot Test",
-        "deepgram": "connected"
+        "service": "MetaLuxury AI Backend"
     }
 
 
-@app.websocket("/stream")
-async def stream(websocket: WebSocket):
-    await websocket.accept()
+@app.post("/create-call")
+def create_call(order: OrderData):
 
-    print("========== EXOTEL CONNECTED ==========")
+    print("========== NEW ORDER ==========")
+    print("ORDER ID:", order.order_id)
+    print("CUSTOMER:", order.customer_name)
+    print("PHONE:", order.phone)
+    print("AMOUNT:", order.amount)
+    print("ADDRESS:", order.address)
+    print("CITY:", order.city)
+    print("STATE:", order.state)
+    print("PINCODE:", order.pincode)
 
-    try:
-        while True:
-
-            data = await websocket.receive_text()
-
-            payload = json.loads(data)
-
-            event = payload.get("event")
-
-            print("EVENT:", event)
-
-            # -----------------------------
-            # CONNECTED EVENT
-            # -----------------------------
-
-            if event == "connected":
-                print("STREAM CONNECTED")
-
-            # -----------------------------
-            # START EVENT
-            # -----------------------------
-
-            elif event == "start":
-
-                print("CALL STARTED")
-
-                try:
-
-                    with wave.open("hello.wav", "rb") as wav_file:
-                        audio_data = wav_file.readframes(
-                            wav_file.getnframes()
-                        )
-
-                    chunk_size = 320
-
-                    for i in range(0, len(audio_data), chunk_size):
-
-                        chunk = audio_data[i:i + chunk_size]
-
-                        message = {
-                            "event": "media",
-                            "media": {
-                                "payload": base64.b64encode(
-                                    chunk
-                                ).decode("utf-8")
-                            }
-                        }
-
-                        await websocket.send_text(
-                            json.dumps(message)
-                        )
-
-                    print("HELLO AUDIO SENT")
-
-                except Exception as audio_error:
-                    print(
-                        "AUDIO ERROR:",
-                        str(audio_error)
-                    )
-
-            # -----------------------------
-            # CUSTOMER AUDIO
-            # -----------------------------
-
-            elif event == "media":
-
-                media = payload.get(
-                    "media",
-                    {}
-                )
-
-                audio_payload = media.get(
-                    "payload"
-                )
-
-                if audio_payload:
-
-                    print(
-                        "CUSTOMER SPEAKING"
-                    )
-
-                    print(
-                        "PAYLOAD SIZE:",
-                        len(audio_payload)
-                    )
-
-            # -----------------------------
-            # STOP EVENT
-            # -----------------------------
-
-            elif event == "stop":
-
-                print(
-                    "CALL ENDED"
-                )
-
-                break
-
-            else:
-
-                print(
-                    "UNKNOWN EVENT:",
-                    event
-                )
-
-    except WebSocketDisconnect:
-
+    for product in order.products:
         print(
-            "EXOTEL DISCONNECTED"
+            f"PRODUCT: {product.name} "
+            f"QTY:{product.quantity} "
+            f"PRICE:{product.price}"
         )
 
-    except Exception as e:
-
-        print(
-            "SERVER ERROR:",
-            str(e)
-        )
-
-    finally:
-
-        print(
-            "SESSION CLOSED"
-        )
+    return {
+        "success": True,
+        "message": "Order received successfully"
+    }
