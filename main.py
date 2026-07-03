@@ -31,6 +31,14 @@ def home():
     }
 
 
+@app.get("/test-call")
+def test_call():
+    return {
+        "status": "success",
+        "message": "Test endpoint is working"
+    }
+
+
 @app.post("/create-call")
 def create_call(order: OrderData):
 
