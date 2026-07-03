@@ -1,8 +1,14 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List
+import os
+import requests
 
 app = FastAPI()
+
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+AGENT_ID = os.getenv("ELEVENLABS_AGENT_ID")
+PHONE_ID = os.getenv("ELEVENLABS_PHONE_ID")
 
 
 class Product(BaseModel):
@@ -33,33 +39,47 @@ def home():
 
 @app.get("/test-call")
 def test_call():
+
+    payload = {
+        "call_name": "MetaLuxury Test Call",
+        "agent_id": AGENT_ID,
+        "agent_phone_number_id": PHONE_ID,
+        "recipients": [
+            {
+                "phone_number": "+917990403189",
+                "conversation_initiation_client_data": {
+                    "dynamic_variables": {
+                        "customer_name": "Jagrut",
+                        "product_name": "Test Product",
+                        "size": "UK 9",
+                        "quantity": "1",
+                        "amount": "999",
+                        "address": "Surat Gujarat"
+                    }
+                }
+            }
+        ]
+    }
+
+    response = requests.post(
+        "https://api.elevenlabs.io/v1/convai/batch-calling/submit",
+        headers={
+            "xi-api-key": ELEVENLABS_API_KEY,
+            "Content-Type": "application/json"
+        },
+        json=payload
+    )
+
     return {
-        "status": "success",
-        "message": "Test endpoint is working"
+        "status_code": response.status_code,
+        "response": response.json()
     }
 
 
 @app.post("/create-call")
 def create_call(order: OrderData):
 
-    print("========== NEW ORDER ==========")
-    print("ORDER ID:", order.order_id)
-    print("CUSTOMER:", order.customer_name)
-    print("PHONE:", order.phone)
-    print("AMOUNT:", order.amount)
-    print("ADDRESS:", order.address)
-    print("CITY:", order.city)
-    print("STATE:", order.state)
-    print("PINCODE:", order.pincode)
-
-    for product in order.products:
-        print(
-            f"PRODUCT: {product.name} "
-            f"QTY:{product.quantity} "
-            f"PRICE:{product.price}"
-        )
-
     return {
         "success": True,
-        "message": "Order received successfully"
+        "message": "WooCommerce integration comes next"
     }
