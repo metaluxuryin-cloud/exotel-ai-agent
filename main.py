@@ -46,7 +46,7 @@ def test_call():
         "agent_phone_number_id": PHONE_ID,
         "recipients": [
             {
-                "phone_number": "+918460387151",
+                "phone_number": "+919375415616",
                 "conversation_initiation_client_data": {
                     "dynamic_variables": {
                         "customer_name": "AYAZ lOHIYA ",
